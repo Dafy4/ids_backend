@@ -1,8 +1,0 @@
-#!/bin/sh
-'''exec' "/run/media/voni/DonnéesWin/Cours/Projet porte ouverte/M2/PORTE OUVERTE 2026/codes/ids_backend/venv/bin/python3" "$0" "$@"
-' '''
-import sys
-from fastapi.cli import main
-if __name__ == '__main__':
-    sys.argv[0] = sys.argv[0].removesuffix('.exe')
-    sys.exit(main())

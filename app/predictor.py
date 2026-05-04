@@ -10,9 +10,9 @@ def predict(data, xgb_model, dnn_model, label_encoder, preprocessor):
     xgb_pred = xgb_model.predict(X)
     xgb_proba = xgb_model.predict_proba(X)
 
-    # ------------------------
+    # --------------------------
     # DNN Prediction
-    # ------------------------
+    # --------------------------
     if hasattr(X, "toarray"):
         X_dl = X.toarray()
     else:
