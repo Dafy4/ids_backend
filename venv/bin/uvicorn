@@ -1,10 +1,8 @@
 #!/bin/sh
-'''exec' "/media/voni/DonnéesWin1/Cours/Projet porte ouverte/M2/PORTE OUVERTE 2026/codes/ids_backend/venv/bin/python3" "$0" "$@"
+'''exec' "/run/media/voni/DonnéesWin/Cours/Projet porte ouverte/M2/PORTE OUVERTE 2026/codes/ids_backend/venv/bin/python3" "$0" "$@"
 ' '''
-# -*- coding: utf-8 -*-
-import re
 import sys
 from uvicorn.main import main
 if __name__ == '__main__':
-    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
     sys.exit(main())

@@ -1,3 +1,4 @@
 # Environnements virtuels
 venv/
 venv/**
+/venv/**
