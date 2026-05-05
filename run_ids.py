@@ -4,7 +4,7 @@
 
 import time
 from app.model_loader import load_artifacts
-from app.realtime.sniffer import start_sniffing
+from app.realtime.sniffer import start_sniffer
 
 # =========================================
 # 1. INITIALISATION
@@ -84,7 +84,7 @@ def main():
     print("\n[INFO] Starting real-time packet capture...")
 
     # Lancement du sniffer
-    start_sniffing(
+    start_sniffer(
         callback=lambda pkt: process_packet(
             pkt,
             model,
