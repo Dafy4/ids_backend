@@ -8,9 +8,9 @@ PREPROCESSOR_PATH = "models/preprocessor.pkl"
 DNN_PATH = "models/dnn_model.h5"
 
 def load_artifacts():
-    xgb_model = joblib.load(MODEL_PATH)
-    label_encoder = joblib.load(PREPROCESSOR_PATH)
-    preprocessor = joblib.load(PREPROCESSOR_PATH)
-    dnn_model = load_model(DNN_PATH)
-
-    return xgb_model, dnn_model, label_encoder, preprocessor
+    return {
+        "xgb_model": joblib.load("models/xgb_model.pkl"),
+        "label_encoder": joblib.load("models/label_encoder.pkl"),
+        "preprocessor": joblib.load("models/preprocessor.pkl"),
+        "dnn_model": load_model("models/dnn_model.h5")
+    }

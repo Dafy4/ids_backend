@@ -5,14 +5,16 @@ from app.schemas import NetworkRequest
 from app.predictor import predict
 import pandas as pd
 from fastapi.middleware.cors import CORSMiddleware
-import asyncio
-from app.main import record_prediction
+# import asyncio
+from datetime import datetime
+# from app.main import record_prediction
 
 app = FastAPI(title="IDS API")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -22,31 +24,51 @@ app.add_middleware(
 alerts_store: list = []
 stats_store = {
     "total": 0, "attacks": 0, "normal": 0,
-    "attack_types": {}
+    "attack_types": {} 
 }
 
 
 #Charger le modèle au démarrage
-model, label_encoder, preprocessor = load_artifacts()
+#model, label_encoder, preprocessor = load_artifacts()
+
+artifacts = load_artifacts()
+
+model = artifacts["xgb_model"]
+label_encoder = artifacts["label_encoder"]
+preprocessor = artifacts["preprocessor"]
+dnn_model = artifacts["dnn_model"]
+
+print("[✓] Models loaded successfully")
 
 @app.get("/")
 def root():
     return {"message": "IDS API running"}
 
-@app.post("/predict")
-def predict_intrusion(request: NetworkRequest):
-    
+@app.post("/api/predict")
+async def predict_intrusion(request: NetworkRequest):
+
     data = pd.DataFrame([request.dict()])
 
-    result = predict(data, model, label_encoder, preprocessor)
-    asyncio.create_task(record_prediction(
+    result = predict(
+        data,
+        model,
+        dnn_model,
+        label_encoder,
+        preprocessor
+    )
+
+    # Choisir XGBoost comme moteur principal
+    predicted_label = result["xgboost"]["prediction"]
+    confidence_score = result["xgboost"]["confidence"]
+
+    await record_prediction(
         label=predicted_label,
         confidence=confidence_score,
-        src_ip=features.get("src_ip"),   # si présent dans l'input
-        dst_ip=features.get("dst_ip")
-    ))
-    return result
+        src_ip=request.src_ip if hasattr(request, "src_ip") else None,
+        dst_ip=request.dst_ip if hasattr(request, "dst_ip") else None
+    )
 
+    return result
 # ── WebSocket temps réel ──────────────────────────────────────────────
 @app.websocket("/ws/live")
 async def websocket_endpoint(websocket: WebSocket):

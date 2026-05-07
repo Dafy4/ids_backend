@@ -14,13 +14,20 @@ def initialize_ids():
     print("===== IDS INITIALIZATION =====")
 
     # Chargement des artefacts ML
-    model, label_encoder, preprocessor = load_artifacts()
+    # model, label_encoder, preprocessor = load_artifacts()
 
+    artifacts = load_artifacts()
+
+    model = artifacts["xgb_model"]
+    label_encoder = artifacts["label_encoder"]
+    preprocessor = artifacts["preprocessor"]
+    dnn_model = artifacts["dnn_model"]
+    
     print("[✓] Model loaded")
     print("[✓] Label encoder loaded")
     print("[✓] Preprocessor loaded")
 
-    return model, label_encoder, preprocessor
+    return model, label_encoder, preprocessor, dnn_model
 
 
 # =========================================
@@ -79,8 +86,9 @@ def main():
     print("===== IDS PIPELINE START =====")
 
     # Initialisation
-    model, label_encoder, preprocessor = initialize_ids()
-
+    # model, label_encoder, preprocessor = initialize_ids()
+    model, label_encoder, preprocessor, dnn_model = initialize_ids()
+    
     print("\n[INFO] Starting real-time packet capture...")
 
     # Lancement du sniffer

@@ -14,14 +14,15 @@ def process_packet(packet):
     label, confidence = predict_packet(features)
 
     # Console output
-    print(f"[ALERT] Prediction: {label} | Confidence: {confidence:.2f}")
+    print(f"[ALERT] Prediction: {label} | Confidence: {confidence:.2f}, Starting IDS on interface: {interface}")
 
-def start_sniffer(interface="eth0"):
+def start_sniffer(callback, interface="eth0"):
 
     print(f"[*] Starting IDS on interface: {interface}")
 
     sniff(
         iface=interface,
-        prn=process_packet,
+        # prn=process_packet,
+        prn=callback,
         store=False
     )
