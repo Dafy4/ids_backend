@@ -8,12 +8,14 @@ from fastapi.middleware.cors import CORSMiddleware
 # import asyncio
 from datetime import datetime
 # from app.main import record_prediction
+from pydantic import BaseModel
 
 app = FastAPI(title="IDS API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=["*"],  # En production, restreindre aux domaines de confiance
+    # allow_origins=["http://localhost:5173", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -26,7 +28,7 @@ stats_store = {
     "total": 0, "attacks": 0, "normal": 0,
     "attack_types": {} 
 }
-
+traffic_store = []
 
 #Charger le modèle au démarrage
 #model, label_encoder, preprocessor = load_artifacts()
@@ -40,9 +42,45 @@ dnn_model = artifacts["dnn_model"]
 
 print("[✓] Models loaded successfully")
 
+class AlertInput(BaseModel):
+    attack_type: str
+    confidence: float
+    src_ip: str = "unknown"
+    dst_ip: str = "unknown"
+
+@app.post("/api/alert")
+async def receive_alert(alert: AlertInput):
+    await record_prediction(
+        label=alert.attack_type,
+        confidence=alert.confidence,
+        src_ip=alert.src_ip,
+        dst_ip=alert.dst_ip
+    )
+    return {"status": "alert recorded"}
+
+class PredictionRecord(BaseModel):
+    label: str
+    confidence: float
+    src_ip: str = "unknown"
+    dst_ip: str = "unknown"
+
+@app.post("/api/record")
+async def record_prediction_endpoint(record: PredictionRecord):
+    await record_prediction(
+        label=record.label,
+        confidence=record.confidence,
+        src_ip=record.src_ip,
+        dst_ip=record.dst_ip
+    )
+    return {"status": "recorded"}
+
 @app.get("/")
 def root():
     return {"message": "IDS API running"}
+
+@app.get("/api/traffic")
+def get_traffic():
+    return traffic_store[-60:]
 
 @app.post("/api/predict")
 async def predict_intrusion(request: NetworkRequest):
@@ -124,6 +162,16 @@ async def record_prediction(label: str, confidence: float,
     is_attack = label.lower() not in ["normal", "0"]
     
     stats_store["total"] += 1
+    traffic_store.append({
+        "timestamp": datetime.now().strftime("%H:%M:%S"),
+        "normal": stats_store["normal"],
+        "attacks": stats_store["attacks"]
+    })
+
+    # garder uniquement les 60 derniers points
+    if len(traffic_store) > 60:
+        traffic_store.pop(0)
+    
     if is_attack:
         stats_store["attacks"] += 1
         stats_store["attack_types"][label] = \

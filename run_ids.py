@@ -5,7 +5,7 @@
 import time
 from app.model_loader import load_artifacts
 from app.realtime.sniffer import start_sniffer
-
+import requests
 # =========================================
 # 1. INITIALISATION
 # =========================================
@@ -62,6 +62,38 @@ def process_packet(packet, model, label_encoder, preprocessor):
             label_encoder,
             preprocessor
         )
+        # Récupérer les IP (si le paquet a une couche IP)
+        src_ip = packet[IP].src if IP in packet else "unknown"
+        dst_ip = packet[IP].dst if IP in packet else "unknown"
+        
+        try:
+            requests.post(
+                "http://127.0.0.1:8000/api/record",
+                json={
+                    "label": prediction,
+                    "confidence": confidence,
+                    "src_ip": src_ip,
+                    "dst_ip": dst_ip
+                },
+                timeout=0.5
+            )
+        except Exception as e:
+            print(f"[WARN] Échec envoi à l'API: {e}")
+        if prediction != "normal":
+            # Envoyer l'alerte à l'API FastAPI
+            try:
+                requests.post(
+                    "http://127.0.0.1:8000/api/alert",
+                    json={
+                        "attack_type": prediction,
+                        "confidence": confidence,
+                        "src_ip": src_ip,    # à récupérer du paquet
+                        "dst_ip": dst_ip
+                    },
+                    timeout=0.2
+                )
+            except Exception as e:
+                print(f"[WARN] Échec envoi alerte : {e}")
 
         end_time = time.time()
 
