@@ -1,32 +1,26 @@
-# app/realtime/predict_live.py
-
 import pandas as pd
-import joblib
-from tensorflow.keras.models import load_model
 import numpy as np
+from app.realtime.post_processor import refine_prediction
 
-from pathlib import Path
+def predict_live(features, model, label_encoder, preprocessor):
+    if isinstance(features, dict):
+        df = pd.DataFrame([features])
+    else:
+        df = features
 
-# Load artifacts
-# Dossier models = deux niveaux au-dessus de predict_live.py
-MODELS_DIR = Path(__file__).parent.parent.parent / 'models'
-
-xgb_model = joblib.load(MODELS_DIR / 'xgb_model.pkl')
-label_encoder = joblib.load(MODELS_DIR / 'label_encoder.pkl')
-preprocessor = joblib.load(MODELS_DIR / 'preprocessor.pkl')
-
-def predict_packet(features):
-
-    df = pd.DataFrame([features])
-
+    # Transformation et prédiction ML
     X = preprocessor.transform(df)
-
-    # XGBoost prediction
-    pred = xgb_model.predict(X)
-    proba = xgb_model.predict_proba(X)
-
-    label = label_encoder.inverse_transform(pred)[0]
+    pred = model.predict(X)
+    proba = model.predict_proba(X)
+    raw_label = label_encoder.inverse_transform(pred)[0]
     confidence = float(np.max(proba))
 
-    return label, confidence
-    
+    # Post-traitement expert
+    final_label, final_conf = refine_prediction(raw_label, confidence, features)
+
+    # Debug optionnel (désactivable)
+    if features.get('service') == 'http' and features.get('count', 0) > 10:
+        print(f"[DEBUG] count={features['count']} srv_rate={features['same_srv_rate']:.2f} "
+              f"serror={features['serror_rate']:.2f} -> ML={raw_label} -> Final={final_label}")
+
+    return final_label, final_conf

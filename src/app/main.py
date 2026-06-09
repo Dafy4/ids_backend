@@ -238,57 +238,7 @@ async def predict_intrusion(request: NetworkRequest):
     )
     
     return result
-# ============================================
-# ROUTE VULNÉRABLE POUR TESTS SQLMAP
-# À SUPPRIMER EN PRODUCTION !!!
-# ============================================
 
-@app.get("/vulnerable/login")
-async def vulnerable_login(username: str = "", password: str = ""):
-    """
-    ENDPOINT VOLONTAIREMENT VULNÉRABLE POUR TESTS SQLMAP
-    N'UTILISE PAS EN PRODUCTION RÉELLE !
-    """
-    import time
-    import random
-    
-    # Simule une requête SQL vulnérable (mais sans vraie base)
-    # On détecte juste les patterns SQL typiques
-    sql_patterns = ["'", '"', "or 1=1", "union select", "sleep(", "benchmark("]
-    is_attack = any(p in username.lower() or p in password.lower() for p in sql_patterns)
-    
-    # Si sqlmap essaie d'injecter, on simule un délai (time-based injection)
-    if "sleep" in username.lower():
-        delay = 2
-        time.sleep(delay)
-        return {"status": "delayed", "delay": delay}
-    
-    # Réponses différentes pour faire croire à sqlmap
-    if is_attack:
-        return {
-            "authenticated": True,
-            "message": "Login successful (vulnerable mode)",
-            "sql_injection_detected": True
-        }
-    else:
-        return {
-            "authenticated": False,
-            "message": "Invalid credentials"
-        }
-
-@app.get("/vulnerable/search")
-async def vulnerable_search(q: str = ""):
-    """
-    Autre endpoint vulnérable pour tests
-    """
-    # Simule une recherche vulnérable
-    if len(q) > 0:
-        return {
-            "query": q,
-            "results": [f"Result for {q}"],
-            "count": 1
-        }
-    return {"results": []}
 # ============================================
 # WEBSOCKET
 # ============================================
